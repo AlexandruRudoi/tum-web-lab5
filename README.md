@@ -1,17 +1,56 @@
-# go2web — Command-Line HTTP Client
+# Lab 5 — HTTP over TCP Sockets
 
-A lightweight HTTP client built with raw TCP sockets in Python. No HTTP libraries (`requests`, `urllib3`, `http.client`) are used — all HTTP communication is done manually over `socket` + `ssl`.
+**Course:** Web Programming  
+**Author:** Alexandru Rudoi  
+**Language:** Python 3.11
 
-## Features
+---
 
-- **Raw socket HTTP/1.1** — builds and parses HTTP requests/responses manually
-- **HTTPS support** — TLS via Python's `ssl` module with certificate verification
-- **Redirect handling** — follows 301/302/303/307/308 redirects (up to 5 hops)
-- **Content negotiation** — sends `Accept: application/json, text/html` and renders accordingly
-- **Chunked transfer decoding** — handles `Transfer-Encoding: chunked` responses
-- **HTTP caching** — TTL-based file cache with `Cache-Control` header support
-- **Web search** — search via DuckDuckGo with interactive result selection
-- **HTML rendering** — strips tags and extracts readable text via BeautifulSoup
+## Overview
+
+`go2web` is a command-line HTTP client built entirely on raw TCP sockets. No HTTP libraries (`requests`, `urllib3`, `http.client`) are used — all HTTP communication is constructed and parsed manually using Python's `socket` and `ssl` modules.
+
+## Implemented Features
+
+| Feature | Description |
+|---------|-------------|
+| `-h` help flag | Displays usage instructions |
+| `-u <URL>` | Fetches any URL over HTTP/HTTPS and prints human-readable content |
+| `-s <search-term>` | Searches DuckDuckGo, displays top 10 results with interactive selection |
+| HTTP redirects | Follows 301/302/303/307/308 automatically (up to 5 hops) |
+| Content negotiation | Sends `Accept: application/json, text/html` — renders JSON or HTML accordingly |
+| Chunked transfer | Decodes `Transfer-Encoding: chunked` responses |
+| HTTP caching | File-based cache with 5-min TTL, respects `Cache-Control: no-store/no-cache` |
+| Clickable search results | User can select a search result number to fetch and display it |
+
+## How It Works
+
+1. **`go2web.py`** — CLI entry point. Parses arguments with `argparse` and routes to `fetch()` or `search()`.
+
+2. **`http_client.py`** — Core HTTP client:
+   - `parse_url()` — breaks a URL into host, path, port, and scheme
+   - `_build_request()` — constructs a raw HTTP/1.1 request string
+   - `raw_request()` — opens a TCP socket, wraps in TLS if HTTPS, sends request, reads response
+   - `parse_response()` — splits raw response into status code, headers, and body
+   - `_decode_chunked()` — handles chunked transfer encoding
+   - `fetch()` — orchestrates the above with redirect following and cache integration
+
+3. **`renderer.py`** — Checks `Content-Type`:
+   - `application/json` → pretty-printed with `json.dumps(indent=2)`
+   - `text/html` → parsed with BeautifulSoup, scripts/styles/nav removed, text extracted
+
+4. **`search.py`** — Sends query to DuckDuckGo's HTML endpoint, parses result links, displays top 10, and lets the user pick one to fetch.
+
+5. **`cache.py`** — File-based JSON cache in `.cache/`:
+   - 5-minute TTL per entry
+   - Respects `Cache-Control: no-store` / `no-cache`
+   - Max 50 entries with oldest-first eviction
+
+## Setup
+
+```bash
+pip install beautifulsoup4
+```
 
 ## Usage
 
@@ -19,12 +58,6 @@ A lightweight HTTP client built with raw TCP sockets in Python. No HTTP librarie
 go2web -u <URL>            # Fetch a URL and print the response
 go2web -s <search-term>    # Search DuckDuckGo and print top 10 results
 go2web -h                  # Show help
-```
-
-## Setup
-
-```bash
-pip install beautifulsoup4 certifi
 ```
 
 ## Examples
@@ -44,18 +77,18 @@ $ go2web -u https://jsonplaceholder.typicode.com/posts/1
 {
   "userId": 1,
   "id": 1,
-  "title": "sunt aut facere ...",
+  "title": "sunt aut facere repellat provident ...",
   "body": "quia et suscipit..."
 }
 ```
 
-### Test redirects
+### Redirect handling
 ```
 $ go2web -u http://google.com
-  -> redirect 301 to https://www.google.com/
+  -> redirect 301 to http://www.google.com/
 ```
 
-### Search
+### Search with interactive selection
 ```
 $ go2web -s python sockets tutorial
 
@@ -66,25 +99,29 @@ $ go2web -s python sockets tutorial
    https://docs.python.org/3/howto/sockets.html
 ...
 
-Enter number to open (or press Enter to skip):
+Enter number to open (or press Enter to skip): 1
+
+Fetching: https://realpython.com/python-sockets/
+...
 ```
 
-### Cache behavior
+### Cache
 ```
-$ go2web -u https://example.com    # first request — fetches from server
-$ go2web -u https://example.com    # second request
+$ go2web -u https://example.com    # fetches from server
+$ go2web -u https://example.com    # serves from cache
   [cache hit]
 ```
 
 ## Project Structure
 
 ```
-├── go2web           # Bash wrapper script
-├── go2web.bat       # Windows wrapper script
+├── go2web           # Bash wrapper
+├── go2web.bat       # Windows wrapper
 ├── go2web.py        # CLI entry point
-├── http_client.py   # Raw socket HTTP client (TCP, SSL, redirects, chunked)
-├── renderer.py      # Response rendering (JSON pretty-print, HTML-to-text)
-├── search.py        # DuckDuckGo search + interactive result selection
-├── cache.py         # HTTP cache (TTL, Cache-Control, eviction)
+├── http_client.py   # Raw socket HTTP client
+├── renderer.py      # JSON/HTML renderer
+├── search.py        # DuckDuckGo search
+├── cache.py         # HTTP cache
+├── task.md          # Lab assignment
 └── .gitignore
 ```

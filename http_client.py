@@ -1,7 +1,6 @@
 import socket
 import ssl
 from urllib.parse import urlparse
-import certifi
 from cache import cache_get, cache_set
 
 
@@ -40,7 +39,7 @@ def raw_request(host, path, port, use_ssl, extra_headers=None):
     sock.connect((host, port))
 
     if use_ssl:
-        context = ssl.create_default_context(cafile=certifi.where())
+        context = ssl.create_default_context()
         sock = context.wrap_socket(sock, server_hostname=host)
 
     sock.sendall(request.encode())
