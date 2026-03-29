@@ -27,12 +27,18 @@ def main():
         return
 
     if args.u:
-        status, headers, body = fetch(args.u)
-        print(render(body, headers.get('content-type', '')))
+        try:
+            status, headers, body = fetch(args.u)
+            print(render(body, headers.get('content-type', '')))
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
         return
 
     if args.s:
-        search(' '.join(args.s))
+        try:
+            search(' '.join(args.s))
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
 
 
 if __name__ == '__main__':
