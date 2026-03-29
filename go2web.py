@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import sys
+from http_client import fetch
+from renderer import render
 
 HELP_TEXT = """go2web - a simple HTTP client
 
@@ -24,7 +26,8 @@ def main():
         return
 
     if args.u:
-        print(f"TODO: fetch {args.u}")
+        status, headers, body = fetch(args.u)
+        print(render(body, headers.get('content-type', '')))
         return
 
     if args.s:
