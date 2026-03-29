@@ -2,6 +2,7 @@ import socket
 import ssl
 from urllib.parse import urlparse
 import certifi
+from cache import cache_get, cache_set
 
 
 def parse_url(url):
@@ -93,8 +94,14 @@ def _decode_chunked(body):
     return ''.join(decoded)
 
 
-def fetch(url, extra_headers=None, max_redirects=5):
+def fetch(url, extra_headers=None, max_redirects=5, use_cache=True):
     extra_headers = extra_headers or {}
+    original_url = url
+
+    if use_cache:
+        cached = cache_get(url)
+        if cached:
+            return cached
 
     for _ in range(max_redirects):
         host, path, port, use_ssl = parse_url(url)
@@ -120,6 +127,10 @@ def fetch(url, extra_headers=None, max_redirects=5):
             url = location
             continue
 
+        if use_cache and status == 200:
+            cache_set(url, status, headers, body)
+            if url != original_url:
+                cache_set(original_url, status, headers, body)
         return status, headers, body
 
     raise Exception(f"Too many redirects fetching {url}")
