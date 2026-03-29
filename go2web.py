@@ -3,6 +3,7 @@ import argparse
 import sys
 from http_client import fetch
 from renderer import render
+from search import search
 
 HELP_TEXT = """go2web - a simple HTTP client
 
@@ -31,7 +32,7 @@ def main():
         return
 
     if args.s:
-        print(f"TODO: search {' '.join(args.s)}")
+        search(' '.join(args.s))
 
 
 if __name__ == '__main__':
